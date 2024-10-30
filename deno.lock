@@ -1,0 +1,33 @@
+{
+  "version": "4",
+  "remote": {
+    "https://deno.land/x/good@1.13.0.0/flattened/all_key_descriptions.js": "9ca2bb16873db46ab1bcab6a49012136b51976bbadf155cc11368c5ccb935420",
+    "https://deno.land/x/good@1.13.0.0/flattened/all_keys.js": "71ed06664181d08960b7df5e401bf7f82224457a65b41d5ddd71fd0e5e61b0cc",
+    "https://deno.land/x/good@1.13.0.0/flattened/array_of_keys_to_object.js": "29b0c195975dc4da82a10eb68dfb1ae81774004194d2e5e2a81c4f3f6268d24e",
+    "https://deno.land/x/good@1.13.0.0/flattened/compare_property.js": "81350bb8ef5331a02ac3a91dcde73283d9152010b78f72fa2a9762571b1dd78b",
+    "https://deno.land/x/good@1.13.0.0/flattened/get.js": "4f87db56859496ba91de161ebb36109affc9107e5f76dc40e893bfbda22397e0",
+    "https://deno.land/x/good@1.13.0.0/flattened/has_direct_key_list.js": "f7aa8c3a7baca7e66584d1f11d77619d45b224ad48cc480035718ff66bbe7b40",
+    "https://deno.land/x/good@1.13.0.0/flattened/has_key_list.js": "e2d4c467b76890a98ede031325ff9163f5fbda2894a4a4b824aefb6413c6e18c",
+    "https://deno.land/x/good@1.13.0.0/flattened/is_empty.js": "d769ed4b9b8f3e423b6cb479ec54642e5c77426da55a18817824921f677b186d",
+    "https://deno.land/x/good@1.13.0.0/flattened/is_empty_object.js": "b73ff724b11d03dec8a168a594a26b01f385d97f7a1c1a9465f9d8951039f0f7",
+    "https://deno.land/x/good@1.13.0.0/flattened/merge.js": "5dbaddef1037911ad5d011962abf7e8ab644cf20af36a309cacaaebf4dfd1eef",
+    "https://deno.land/x/good@1.13.0.0/flattened/object_compare.js": "307b87d024f93e3f6d9c534400fe60f44ed2f6b28bb4b24be79e930570eb12f6",
+    "https://deno.land/x/good@1.13.0.0/flattened/own_key_descriptions.js": "83912de94b7a312bee00aeb9ce91639b6e41fc49566567b91f5ad5fd43e86076",
+    "https://deno.land/x/good@1.13.0.0/flattened/recursively_iterate_own_keys_of.js": "aa760b7df1b21c0f2fb075281eeaa148ba515d3f76751ed33e8a01cde332b4d3",
+    "https://deno.land/x/good@1.13.0.0/flattened/recursively_own_keys_of.js": "cb0e332f559c8d309b5278a5ec793714a9157456cbeb8dd2db7e64fae2290089",
+    "https://deno.land/x/good@1.13.0.0/flattened/remove.js": "179277d4c9a0164d9ff86146ccd958943870ec6f9b81896e6655fde90ef60dd3",
+    "https://deno.land/x/good@1.13.0.0/flattened/set.js": "55ab4d7259a7c8ed24d76092510d50fe679b93a013fa48bfc57270bf2e0dd0f3",
+    "https://deno.land/x/good@1.13.0.0/flattened/set_if_missing_direct_key.js": "963a3771665868a705e36448e62f2a559aab2d57d24e4a4fcfc417588139d386",
+    "https://deno.land/x/good@1.13.0.0/object.js": "173941204ac6a05674b8eb724548046b4b9ddb23346a1c83d43085e77c077ec9"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@wasmer/sdk@0.8",
+        "npm:vite@^5.4.0",
+        "npm:xterm-addon-fit@0.8",
+        "npm:xterm@^5.3.0"
+      ]
+    }
+  }
+}
