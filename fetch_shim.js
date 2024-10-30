@@ -1,5 +1,7 @@
 import { capitalize, indent, toCamelCase, digitsToEnglishArray, toPascalCase, toKebabCase, toSnakeCase, toScreamingKebabCase, toScreamingSnakeCase, toRepresentation, toString, regex, findAll, iterativelyFindAll, escapeRegexMatch, escapeRegexReplace, extractFirst, isValidIdentifier, removeCommonPrefix, didYouMean } from "https://deno.land/x/good@1.13.0.1/string.js"
 import { bytesToBase64, base64ToBytes } from "./byte_convert.js"
+import { levenshteinDistanceOrdering } from "https://deno.land/x/good@1.13.0.1/flattened/levenshtein_distance_ordering.js"
+
 // based on:
     // (yeah it says "dont use" but whatever)
     // https://w3c.github.io/web-performance/specs/HAR/Overview.html#sec-object-types-params
@@ -26,8 +28,6 @@ function cutOfCommonCommonDomain(url, domainsToIgnore) {
     domainsToIgnore.sort((a,b)=>b.length-a.length)
     for (const each of domainsToIgnore) {
         if (url.startsWith(each)) {
-            console.debug(`    url getting cut is:`,url)
-            console.debug(`    url.slice(each.length) is:`,url.slice(each.length))
             return url.slice(each.length)
         }
     }
@@ -117,49 +117,7 @@ async function fetchArgsToId(urlOrRequest, options=undefined, { domainsToIgnore 
         JSON.stringify({url: cutOfCommonCommonDomain(url, domainsToIgnore), method, postData})
     )
 }
-const RealResponse = globalThis.Response
-const originalGetterUrl = Object.getOwnPropertyDescriptor(RealResponse.prototype, "url").get
-const originalGetterType = Object.getOwnPropertyDescriptor(RealResponse.prototype, "type").get
-const urlValueMap = new Map()
-// Object.defineProperty(RealResponse.prototype, "url", {
-//     get: function() {
-//         if (urlValueMap.has(this)) {
-//             return urlValueMap.get(this)
-//         }
-//         return originalGetterUrl.apply(this, [])
-//     },
-//     set: function(value) {
-//         urlValueMap.set(this, value)
-//     },
-//     enumerable: true,
-//     configurable: true,
-// })
-// Object.defineProperty(RealResponse.prototype, "type", {
-//     get: function() {
-//         if (this._type) {
-//             return this._type
-//         }
-//         return originalGetterType.apply(this, [])
-//     },
-//     set: function(value) {
-//         this._type = value
-//     },
-//     enumerable: true,
-//     configurable: true,
-// })
-// class Response extends RealResponse {
-//     #url = ""
-//     constructor(body, options) {
-//         super(body, options)
-//         this.url = options.url
-//     }
-//     get type() {
-//         return "basic"
-//     }
-//     get url() {
-//         return this.#url
-//     }
-// }
+
 function responseJsonToResponseObject(jsonObj, url) {
     const headers = new Headers()
     for (const { name, value } of jsonObj.headers) {
@@ -176,39 +134,18 @@ function responseJsonToResponseObject(jsonObj, url) {
             try {
                 body = base64ToBytes(body)
             } catch (error) {
-                console.debug(`error is:`,error)
-                console.debug(`body is:`,body)
                 throw error
             }
-                
         }
     }
-    
     const response = new Response(body, {
         status: jsonObj.status,
         statusText: jsonObj.statusText,
         headers: headers,
     })
-    // response.url = url
     const originalThing = response
-    // originalThing[Symbol.iterator]      // used by for..of loops and spread syntax.
-    // originalThing[Symbol.toPrimitive]
     const proxyObject = new Proxy(originalThing, {
-        // // Object.keys
-        // ownKeys(original, ...args) { return Reflect.ownKeys(original, ...args) },
-        // // Object.keys only does what you think it will if getOwnPropertyDescriptor says the key is enumerable and configurable
-        // getOwnPropertyDescriptor(original, prop) {
-        //     return {
-        //         enumerable: true,
-        //         configurable: true
-        //     }
-        // }
-        // function call (original value needs to be a function)
-        // apply(original, context, ...args) { console.log(args) },
-        // new operator (original value needs to be a class)
-        // construct(original, args, originalConstructor) {},
         get(original, key, ...args) {
-            console.debug(`key is:`,key)
             if (key == "url") {
                 return url
             }
@@ -216,7 +153,6 @@ function responseJsonToResponseObject(jsonObj, url) {
                 return (func)=>func(originalThing)
             }
             const value = originalThing[key]
-            console.debug(`value is:`,value)
             return value
         },
         set(original, key, ...args) {
@@ -249,7 +185,6 @@ export function createFetchShim(data, {realFetch, domainsToIgnore, dontIgnoreSel
             ...pages.map(({title})=>title).filter(each=>typeof each == "string")
         )
     }
-    console.debug(`domainsToIgnore is:`,domainsToIgnore)
     if (!realFetch) {
         realFetch = globalThis.fetch
     }
@@ -260,20 +195,17 @@ export function createFetchShim(data, {realFetch, domainsToIgnore, dontIgnoreSel
         if (!requestJson) {
             continue
         }
-        console.debug(`    url is:`,cutOfCommonCommonDomain(requestJson.url, domainsToIgnore))
         const requestId = requestJsonToId(requestJson, { domainsToIgnore })
         allReqestIds.add(requestId)
         idToResponse[requestId] = ()=>responseJsonToResponseObject(responseJson, requestJson.url)
     }
-    console.debug(`allReqestIds is:`,allReqestIds)
     
     return async function fetch(url, options) {
         // e.g. url, method, postData
         const requestId = await fetchArgsToId(url, options, {domainsToIgnore})
         if (!allReqestIds.has(requestId)) {
             if (disableRealFetch) {
-                console.debug(`requestId is:`,requestId)
-                throw Error(`tried to fetch the following, but fetch as been disabled (by createFetchShim)\nfirst argument: ${toRepresentation(url)}\noptions: ${toRepresentation(options)}`)
+                throw Error(`tried to fetch the following, but fetch as been disabled (by createFetchShim)\nfirst argument: ${url}\noptions: ${toRepresentation(options)}\n\nThe requestId was: ${requestId}\n\nThe following request id's are the most similar ones in the HAR data:\n${levenshteinDistanceOrdering({ word: requestId, words: [...allReqestIds]}).join("\n    ")}`)
             }
             return realFetch(url, options)
         }
