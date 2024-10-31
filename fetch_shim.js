@@ -5,7 +5,7 @@ import { levenshteinDistanceOrdering } from "https://deno.land/x/good@1.13.0.1/f
 // based on:
     // (yeah it says "dont use" but whatever)
     // https://w3c.github.io/web-performance/specs/HAR/Overview.html#sec-object-types-params
-
+const realFetch = globalThis.fetch
 function hashCode(str) {
     return str
     let hash = 0;
@@ -59,6 +59,9 @@ async function fetchArgsToId(urlOrRequest, options=undefined, { domainsToIgnore 
                 urlOrRequest = new URL(`${source}/${urlOrRequest}`)
                 // remove extra slashes (which cause fetch to not match)
                 urlOrRequest.pathname = urlOrRequest.pathname.replace(/\/+/, "/")
+            } else {
+                urlOrRequest = new URL(`file://${urlOrRequest}`)
+                urlOrRequest.pathname = urlOrRequest.pathname.replace(/\/+/, "/")
             }
         }
     }
@@ -89,7 +92,7 @@ async function fetchArgsToId(urlOrRequest, options=undefined, { domainsToIgnore 
         request = new Request(urlOrRequest)
     } else {
         // e.g. throw error because its an invalid argument (but use the real fetch to trigger the error)
-        return fetch(urlOrRequest)
+        return realFetch(urlOrRequest)
     }
 
     // 
@@ -176,6 +179,8 @@ export function createFetchShim(data, {realFetch, domainsToIgnore, dontIgnoreSel
         if (globalThis.window?.location?.pathname) {
             const source = window.location.origin + window.location.pathname
             domainsToIgnore.push(source)
+        } else {
+            domainsToIgnore.push("file:///")
         }
     }
     if (!dontIgnoreSelf) {
@@ -205,7 +210,7 @@ export function createFetchShim(data, {realFetch, domainsToIgnore, dontIgnoreSel
         const requestId = await fetchArgsToId(url, options, {domainsToIgnore})
         if (!allReqestIds.has(requestId)) {
             if (disableRealFetch) {
-                throw Error(`tried to fetch the following, but fetch as been disabled (by createFetchShim)\nfirst argument: ${url}\noptions: ${toRepresentation(options)}\n\nThe requestId was: ${requestId}\n\nThe following request id's are the most similar ones in the HAR data:\n${levenshteinDistanceOrdering({ word: requestId, words: [...allReqestIds]}).join("\n    ")}`)
+                throw Error(`tried to fetch the following, but fetch as been disabled (by createFetchShim)\nfirst argument: ${url}\noptions: ${toRepresentation(options)}\n\nThe requestId was: ${requestId}\n\nThe following request id's are the most similar ones in the HAR data:\n    ${levenshteinDistanceOrdering({ word: requestId, otherWords: [...allReqestIds]}).join("\n    ")}`)
             }
             return realFetch(url, options)
         }
