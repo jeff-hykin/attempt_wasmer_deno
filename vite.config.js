@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "npm:vite";
 
 export default defineConfig({
   server: {
