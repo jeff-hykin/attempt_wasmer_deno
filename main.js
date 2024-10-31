@@ -1,48 +1,57 @@
-import harData from "./chrome_har.js"
-import { createFetchShim } from "./fetch_shim.js"
+// 
+// 
+// patch fetch so this code works offline
+// 
+// 
+    import harData from "./chrome_har.js"
+    import { createFetchShim } from "./fetch_shim.js"
 
-const originalFetch = globalThis.fetch
-function monkeyPatch(object, attrName, createNewFunction) {
-    let prevObj = null
-    while (!Object.getOwnPropertyNames(object).includes(attrName)) {
-        prevObj = object
-        object = Object.getPrototypeOf(object)
-        if (prevObj === object) {
-            throw new Error(`Could not find ${attrName} on ${object}`)
-        }
-    }
-    const originalFunction = object[attrName]
-    let theThis
-    const wrappedOriginal = function(...args) {
-        return originalFunction.apply(theThis, args)
-    }
-    const innerReplacement = createNewFunction(wrappedOriginal)
-    object[attrName] = function(...args) {
-        theThis = this
-        return innerReplacement.apply(this, args)
-    }
-}
-// use local responses
-monkeyPatch(globalThis, "fetch", original=>{
-    const fakeFetch = createFetchShim(harData, { realFetch: originalFetch, disableRealFetch: true })
-    return async (...args)=>{
-        console.log(`fetching ${args[0]?.url||args[0]?.href||args[0]}`)
-        let output = await fakeFetch(...args)
-        try {
-            console.log(`text`)
-            try {
-                throw new Error("")
-            } catch (error) {
-                console.log(`fetch happend at:`,error.stack.replace("Error", ""))
+    const originalFetch = globalThis.fetch
+    function monkeyPatch(object, attrName, createNewFunction) {
+        let prevObj = null
+        while (!Object.getOwnPropertyNames(object).includes(attrName)) {
+            prevObj = object
+            object = Object.getPrototypeOf(object)
+            if (prevObj === object) {
+                throw new Error(`Could not find ${attrName} on ${object}`)
             }
-        } catch (error) {
-            
         }
-        console.log(`output is:`,output)
-        return output
+        const originalFunction = object[attrName]
+        let theThis
+        const wrappedOriginal = function(...args) {
+            return originalFunction.apply(theThis, args)
+        }
+        const innerReplacement = createNewFunction(wrappedOriginal)
+        object[attrName] = function(...args) {
+            theThis = this
+            return innerReplacement.apply(this, args)
+        }
     }
-})
+    // use local responses
+    monkeyPatch(globalThis, "fetch", original=>{
+        const fakeFetch = createFetchShim(harData, { realFetch: originalFetch, disableRealFetch: true })
+        return async (...args)=>{
+            console.log(`fetching ${args[0]?.url||args[0]?.href||args[0]}`)
+            let output = await fakeFetch(...args)
+            try {
+                console.log(`text`)
+                try {
+                    throw new Error("")
+                } catch (error) {
+                    console.log(`fetch happend at:`,error.stack.replace("Error", ""))
+                }
+            } catch (error) {
+                
+            }
+            console.log(`output is:`,output)
+            return output
+        }
+    })
 
+
+// 
+// actual main code
+// 
 import { Wasmer, init, Directory } from "./wasmer_sdk/index.mjs"
 
 // log can be "trace", idk of any other options
