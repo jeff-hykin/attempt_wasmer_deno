@@ -1,6 +1,7 @@
 import harData from "./chrome_har.js"
 import { createFetchShim } from "./fetch_shim.js"
 
+const originalFetch = globalThis.fetch
 function monkeyPatch(object, attrName, createNewFunction) {
     let prevObj = null
     while (!Object.getOwnPropertyNames(object).includes(attrName)) {
@@ -23,20 +24,37 @@ function monkeyPatch(object, attrName, createNewFunction) {
 }
 // use local responses
 monkeyPatch(globalThis, "fetch", original=>{
-    const fakeFetch = createFetchShim(harData, { realFetch: original, disableRealFetch: true })
-    return async (...args)=>fakeFetch(...args)
+    const fakeFetch = createFetchShim(harData, { realFetch: originalFetch, disableRealFetch: true })
+    return async (...args)=>{
+        console.log(`fetching ${args[0]?.url||args[0]?.href||args[0]}`)
+        let output = await fakeFetch(...args)
+        try {
+            console.log(`text`)
+            try {
+                throw new Error("")
+            } catch (error) {
+                console.log(`fetch happend at:`,error.stack.replace("Error", ""))
+            }
+        } catch (error) {
+            
+        }
+        console.log(`output is:`,output)
+        return output
+    }
 })
 
 import { Wasmer, init, Directory } from "./wasmer_sdk/index.mjs"
 
 // log can be "trace", idk of any other options
+console.log(`running init`)
 await init({log: null, module: "/node_modules/@wasmer/sdk/dist/wasmer_js_bg.wasm"});
 
 var packageName = "sharrattj/bash";
 var uses = ["wasmer/neatvi"]
 var args = [];
+console.log(`getting package ${packageName}`)
 var pkg = await Wasmer.fromRegistry(packageName);
-
+console.log(`got package ${packageName}`)
 // 
 // setup files
 // 
@@ -76,6 +94,6 @@ putchar(k%80?b[k]:10);A+=0.04;B+=
             ..,--------,*/
 `);
 
-var instance = await pkg.entrypoint!.run({ args, uses,  mount: { "/home": home }, cwd: "/home"});
+export var instance = await pkg.entrypoint.run({ args, uses,  mount: { "/home": home }, cwd: "/home"});
 globalThis.instance = instance
 //   connectStreams(instance, term);
